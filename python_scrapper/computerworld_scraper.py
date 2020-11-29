@@ -4,22 +4,28 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 from utils import *
 
-
 '''
 FUTURE UPDATES:
 1. Check if the event is present in collection, if not then insert
 '''
 
+def fetch_events_json(remove_and_insert):
+    #Get mongo connection
+    conx = get_mongo_client()
+    db = get_db_name(conx)
 
-def fetch_events_json():
+    #URL
     url = "https://www.computerworld.com/article/3313417/tech-event-calendar-2020-upcoming-shows-conferences-and-it-expos.html"
     page = urlopen(url)
     html = page.read().decode("utf-8")
+
+    #Read html and title
     soup = BeautifulSoup(html, "html.parser")
     title = soup.find("title")
 
     events = []
-
+    
+    #find table tag with given id and all rows inside it
     table = soup.find("table", attrs={"id": "cwsearchabletable"}).tbody.find_all("tr")
 
     for row in table:
@@ -33,23 +39,21 @@ def fetch_events_json():
         data["title"] = title.text
         data["website_url"] = url
         events.append(data)
+
+    #Insert into Mongo events collection
+    if remove_and_insert:
+        #Remove the existing data
+        db.events.remove({"website_url": url})
+        #Insert into mongo events collection
+        db.events.insert_many(events)
+    else:
+        #Insert into mongo events collection
+        db.events.insert_many(events)
     return events, url
 
 
 if __name__ == '__main__':
     remove_and_insert = True
 
-    #Get mongo connection
-    conx = get_mongo_client()
-    db = get_db_name(conx)
+    events_list, url = fetch_events_json(remove_and_insert)
 
-    events_list, url = fetch_events_json()
-
-    if remove_and_insert:
-        #Remove the existing data
-        db.events.remove({"website_url": url})
-        #Insert into mongo events collection
-        db.events.insert_many(events_list)
-    else:
-        #Insert into mongo events collection
-        db.events.insert_many(events_list)

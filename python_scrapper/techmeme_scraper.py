@@ -10,13 +10,21 @@ FUTURE UPDATES:
 1. Check if the event is present in collection, if not then insert
 '''
 
-def fetch_events_json():
+def fetch_events_json(remove_and_insert):
+    #Get mongo connection
+    conx = get_mongo_client()
+    db = get_db_name(conx)
+
+    #URL
     url = "https://www.techmeme.com/events"
     page = urlopen(url)
     html = page.read().decode("utf-8")
+
+    #Read html and find title
     soup = BeautifulSoup(html, "html.parser")
     title = soup.find("title")
 
+    #Finding all divs with class 'rhov'
     table = soup.find_all("div", attrs={"class": "rhov"})
 
     events = []
@@ -36,22 +44,20 @@ def fetch_events_json():
         single_event["title"] = title.text
         single_event["website_url"] = url
         events.append(single_event)
+
+    #Insert into mongo events collection
+    if remove_and_insert:
+        #Remove the existing data
+        db.events.remove({"website_url": url})
+        #Insert into mongo events collection
+        db.events.insert_many(events)
+    else:
+        #Insert into mongo events collection
+        db.events.insert_many(events)
     return events, url
 
 if __name__ == '__main__':
     remove_and_insert = True
 
-    #Get mongo connection
-    conx = get_mongo_client()
-    db = get_db_name(conx)
+    events_list, url = fetch_events_json(remove_and_insert)
 
-    events_list, url = fetch_events_json()
-
-    if remove_and_insert:
-        #Remove the existing data
-        db.events.remove({"website_url": url})
-        #Insert into mongo events collection
-        db.events.insert_many(events_list)
-    else:
-        #Insert into mongo events collection
-        db.events.insert_many(events_list)
