@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from flask import Flask, request, send_from_directory
+from flask_cors import CORS
 import subprocess
 from pymongo import MongoClient
 from config import *
@@ -8,6 +9,8 @@ from utils import *
 import re
 
 app = Flask(__name__, static_url_path='/home/qet/SCRAPER/python_scrapper/client')
+CORS(app)  # This will enable CORS for all routes
+
 
 conx = get_mongo_client()
 db = get_db_name(conx)
